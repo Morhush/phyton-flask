@@ -20,7 +20,7 @@ def login():
 def Denis():
     return "<h2>O ja suda</h2>"
 
-
+# Лише для локального сервера (закоментувати)
 if __name__ == '__main__':
     app.run(debug=True)
 
