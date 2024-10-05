@@ -1,11 +1,14 @@
 from crypt import methods
 from datetime import datetime
-from flask import Flask
+from flask import Flask, session, redirect
 from flask import request
 from flask import render_template
 from flask_sqlalchemy import SQLAlchemy
 
 import os
+
+from werkzeug.serving import make_ssl_devcert
+
 basedir = os.path.abspath(os.path.dirname(__file__))
 
 app = Flask(__name__)
@@ -14,6 +17,7 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'da
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
+app.secret_key = '4ikQNBb4VuJYa5kD6UFb5PoZX5LZ2Uh1gi-C1EMlg84'
 
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -42,9 +46,12 @@ with app.app_context():
     db.create_all()
 
 
+# == ROUTES ==================================================
+
 @app.route('/')
 def index():
-    return render_template('index.html')
+    x = session.get('username')
+    return render_template('index.html', username=session.get('username'))
 
 
 @app.route('/articles')
@@ -61,6 +68,9 @@ def add_post():
 
 @app.route('/add_post', methods = ['POST'])
 def add_post_form():
+    if not session.get('username'):
+        return redirect('/login')
+
     post_name = request.form['text']
     post_text = request.form['text']
     post_image = request.form['URL']
@@ -79,6 +89,9 @@ def add_post_form():
 
 @app.route('/delete_post.html', methods=['GET', 'POST'])
 def delete_post():
+    if not session.get('username'):
+        return redirect('/login')
+
     if request.method == 'POST':
         id_list = request.form.getlist('id')
         for id in id_list:
@@ -103,6 +116,12 @@ def login():
     return render_template('login.html', message=message)
 
 
+@app.route('/logout', methods=['GET'])
+def logout():
+    session.clear()
+    # session.pop('username')
+    return redirect('/')
+
 
 @app.route('/about')
 def about():
@@ -111,6 +130,9 @@ def about():
 
 @app.route('/add_user', methods=['GET', 'POST'])
 def add_user():
+    if not session.get('username'):
+        return redirect('/login')
+
     if request.method == 'POST':
         username = request.form['username']
         email = request.form['email']
